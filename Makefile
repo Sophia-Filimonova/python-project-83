@@ -18,7 +18,7 @@ check: selfcheck lint test
 gendiff:
 	poetry run gendiff
 
-build: check
+build:
 	poetry build
 
 publish:
