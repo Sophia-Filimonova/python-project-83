@@ -13,7 +13,7 @@ gunicorn = "^20.1.0"
 python-dotenv = "^1.0.0"
 
 
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.dev.dependencies]
 flake8 = "^6.0.0"
 
 [build-system]
