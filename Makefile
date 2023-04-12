@@ -4,19 +4,10 @@ install:
 lint:
 	poetry run flake8 page_analyzer
 
-test:
-	poetry run pytest -vv
-
-test-coverage:
-	poetry run pytest --cov=gendiff tests/ --cov-report xml 
-
 selfcheck:
 	poetry check
 
-check: selfcheck lint test
-
-gendiff:
-	poetry run gendiff
+check: selfcheck lint
 
 build:
 	poetry build
