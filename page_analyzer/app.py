@@ -57,7 +57,7 @@ def urls_post():
     if len(normalized_url) > 255:
         flash('URL превышает 255 символов', 'alert alert-danger')
         return redirect(url_for('main_page'))
-    
+
     conn = psycopg2.connect(DATABASE_URL)
     conn.autocommit = True
     with conn.cursor() as curs:
@@ -66,11 +66,14 @@ def urls_post():
         for url in all_urls:
             if url == (normalized_url,):
                 flash('Страница уже существует', 'alert alert-info')
-                curs.execute('SELECT id FROM urls WHERE name=%s', (normalized_url,))
-                (id,)  = curs.fetchone()
+                curs.execute(
+                    'SELECT id FROM urls WHERE name=%s', (normalized_url,))
+                (id,) = curs.fetchone()
                 return redirect(url_for('show_url', id=id))
         created_at = datetime.now()
-        curs.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s)', (normalized_url, created_at))
+        curs.execute(
+            'INSERT INTO urls (name, created_at) VALUES (%s, %s)',
+            (normalized_url, created_at))
         curs.execute('SELECT id FROM urls WHERE name=%s', (normalized_url,))
         (id,) = curs.fetchone()
     conn.close()
