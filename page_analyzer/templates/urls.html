@@ -44,9 +44,12 @@
           <tbody>
             {% for url in urls %}
             <tr>
-              <td>{{ url.id }}</td>
+              <td>{{ url.u_id }}</td>
               <td><a href="{{ url_for('show_url', id=url.id)}}">{{ url.name }}</a></td>
-              <td></td>
+              <td>{% if url.date %}
+                  {{ url.date.date() }}
+                  {% endif %}
+              </td>
               <td></td>
             </tr>
             {% endfor %}

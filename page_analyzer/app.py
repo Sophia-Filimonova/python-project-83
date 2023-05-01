@@ -30,9 +30,12 @@ def urls_get():
     conn = psycopg2.connect(DATABASE_URL)
     conn.autocommit = True
     with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
-        curs.execute('SELECT * FROM urls')
+        curs.execute(
+            '''SELECT urls.id as u_id, name, MAX(url_checks.created_at) as date
+            FROM urls LEFT JOIN url_checks ON urls.id=url_checks.url_id
+            GROUP BY u_id, name
+            ORDER BY u_id DESC''')
         all_urls = curs.fetchall()
-        all_urls.sort(key=lambda x: -x.id)
     conn.close()
     return render_template(
         'urls.html', messages=messages, urls=all_urls)
@@ -91,6 +94,28 @@ def show_url(id):
     with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
         curs.execute('SELECT * FROM urls WHERE id=%s', (id,))
         selected_url = curs.fetchone()
+        curs.execute(
+            '''SELECT * FROM url_checks
+            WHERE url_id=%s ORDER BY id DESC''', (selected_url.id,))
+        checks = curs.fetchall()
     conn.close()
     return render_template(
-        'show_url.html', messages=messages, selected_url=selected_url)
+        'show_url.html', messages=messages, selected_url=selected_url,
+        checks=checks)
+
+
+@app.post('/urls/<id>/checks')
+def checks(id):
+
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.autocommit = True
+    with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
+        curs.execute('SELECT * FROM urls WHERE id=%s', (id,))
+        selected_url = curs.fetchone()
+        created_at = datetime.now()
+        curs.execute(
+            'INSERT INTO url_checks (url_id, created_at) VALUES (%s, %s)',
+            (selected_url.id, created_at))
+    conn.close()
+
+    return redirect(url_for('show_url', id=id))
