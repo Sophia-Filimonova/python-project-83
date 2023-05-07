@@ -65,7 +65,8 @@ def urls_post():
         normalized_url = o.scheme + '://' + o.hostname
     else:
         flash('Некорректный URL', 'alert alert-danger')
-        return redirect(url_for('main_page'))
+        messages = get_flashed_messages(with_categories=True)
+        return render_template('main_form.html', messages=messages), 422
 
     if len(normalized_url) > 255:
         flash('URL превышает 255 символов', 'alert alert-danger')
