@@ -8,6 +8,7 @@ import validators
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import requests
+from page_analyzer.parse_page import parse_page
 
 
 load_dotenv()
@@ -132,11 +133,13 @@ def checks(id):
             conn.close()
             return redirect(url_for('show_url', id=id))
         status_code = r.status_code
-        created_at = datetime.now()
+        h1, title, description, created_at = parse_page(r)
         curs.execute(
-            '''INSERT INTO url_checks (url_id, status_code, created_at)
-             VALUES (%s, %s, %s)''',
-            (selected_url.id, status_code, created_at))
+            '''INSERT INTO url_checks (url_id, status_code,
+            h1, title, description, created_at)
+             VALUES (%s, %s, %s, %s, %s, %s)''',
+            (selected_url.id, status_code, h1, title, description, created_at))
+        flash('Страница успешно проверена', 'alert alert-success')
     conn.close()
 
     return redirect(url_for('show_url', id=id))
