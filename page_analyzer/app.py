@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, get_flashed_messages
+from flask import Flask, render_template, flash  # get_flashed_messages
 from flask import url_for, redirect, request
 from datetime import datetime
 from urllib.parse import urlparse
@@ -8,7 +8,7 @@ import validators
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import requests
-from page_analyzer.parse_page import parse_page
+from page_analyzer.parser import parse_page
 
 
 load_dotenv()
@@ -18,19 +18,42 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 
+def connect_db():
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.autocommit = True
+    return conn
+
+
+def validate_url(url):
+
+    if url == '':
+        flash('Некорректный URL', 'alert alert-danger')
+        flash('URL обязателен', 'alert alert-danger')
+        return False
+
+    if validators.url(url):
+        o = urlparse(url)
+        normalized_url = o.scheme + '://' + o.hostname
+    else:
+        flash('Некорректный URL', 'alert alert-danger')
+        return False
+
+    if len(normalized_url) > 255:
+        flash('URL превышает 255 символов', 'alert alert-danger')
+        return False
+
+    return normalized_url
+
+
 @app.route('/')
 def main_page():
-    messages = get_flashed_messages(with_categories=True)
-    return render_template('main_form.html', messages=messages)
+    return render_template('main_form.html')
 
 
 @app.route('/urls')
 def urls_get():
 
-    messages = get_flashed_messages(with_categories=True)
-
-    conn = psycopg2.connect(DATABASE_URL)
-    conn.autocommit = True
+    conn = connect_db()
     with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
         curs.execute(
             '''SELECT urls.id as u_id, name,
@@ -47,33 +70,18 @@ def urls_get():
         if i > 0:
             if urls_from_join[i].u_id != urls_from_join[i - 1].u_id:
                 urls.append(url)
-    return render_template(
-        'urls.html', messages=messages, urls=urls)
+    return render_template('urls.html', urls=urls)
 
 
 @app.post('/urls')
 def urls_post():
 
     recieved_url = request.form.get('url', default='')
-    if recieved_url == '':
-        flash('Некорректный URL', 'alert alert-danger')
-        flash('URL обязателен', 'alert alert-danger')
-        return redirect(url_for('main_page'))
+    normalized_url = validate_url(recieved_url)
+    if not normalized_url:
+        return render_template('main_form.html'), 422
 
-    if validators.url(recieved_url):
-        o = urlparse(recieved_url)
-        normalized_url = o.scheme + '://' + o.hostname
-    else:
-        flash('Некорректный URL', 'alert alert-danger')
-        messages = get_flashed_messages(with_categories=True)
-        return render_template('main_form.html', messages=messages), 422
-
-    if len(normalized_url) > 255:
-        flash('URL превышает 255 символов', 'alert alert-danger')
-        return redirect(url_for('main_page'))
-
-    conn = psycopg2.connect(DATABASE_URL)
-    conn.autocommit = True
+    conn = connect_db()
     with conn.cursor() as curs:
         curs.execute('SELECT name FROM urls')
         all_urls = curs.fetchall()
@@ -98,10 +106,7 @@ def urls_post():
 @app.route('/urls/<id>')
 def show_url(id):
 
-    messages = get_flashed_messages(with_categories=True)
-
-    conn = psycopg2.connect(DATABASE_URL)
-    conn.autocommit = True
+    conn = connect_db()
     with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
         curs.execute('SELECT * FROM urls WHERE id=%s', (id,))
         selected_url = curs.fetchone()
@@ -111,15 +116,13 @@ def show_url(id):
         checks = curs.fetchall()
     conn.close()
     return render_template(
-        'show_url.html', messages=messages, selected_url=selected_url,
-        checks=checks)
+        'show_url.html', selected_url=selected_url, checks=checks)
 
 
 @app.post('/urls/<id>/checks')
 def checks(id):
 
-    conn = psycopg2.connect(DATABASE_URL)
-    conn.autocommit = True
+    conn = connect_db()
     with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
         curs.execute('SELECT * FROM urls WHERE id=%s', (id,))
         selected_url = curs.fetchone()
