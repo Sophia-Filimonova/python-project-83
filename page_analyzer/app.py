@@ -56,20 +56,20 @@ def urls_get():
     conn = connect_db()
     with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
         curs.execute(
-            '''SELECT urls.id as u_id, name,
-            url_checks.created_at as date, status_code
+            '''SELECT urls.id AS u_id, name,
+            url_checks.created_at AS date, status_code
             FROM urls LEFT JOIN url_checks ON urls.id=url_checks.url_id
-            ORDER BY u_id DESC, date DESC
+            JOIN
+            (SELECT urls.id as u__id, MAX(url_checks.created_at) AS max_date
+            FROM urls LEFT JOIN url_checks ON urls.id=url_checks.url_id
+            GROUP BY u__id
+            ) as maxdates
+            ON urls.id=maxdates.u__id AND
+            (url_checks.created_at=max_date OR url_checks.created_at IS NULL)
+            ORDER BY u_id DESC
             ''')
-        urls_from_join = curs.fetchall()
+        urls = curs.fetchall()
     conn.close()
-    urls = []
-    for i, url in enumerate(urls_from_join):
-        if i == 0:
-            urls.append(url)
-        if i > 0:
-            if urls_from_join[i].u_id != urls_from_join[i - 1].u_id:
-                urls.append(url)
     return render_template('urls.html', urls=urls)
 
 
@@ -128,11 +128,8 @@ def checks(id):
         selected_url = curs.fetchone()
         try:
             r = requests.get(selected_url.name)
+            r.raise_for_status()
         except Exception:
-            flash('Произошла ошибка при проверке', 'alert alert-danger')
-            conn.close()
-            return redirect(url_for('show_url', id=id))
-        if r.status_code != requests.codes.ok:
             flash('Произошла ошибка при проверке', 'alert alert-danger')
             conn.close()
             return redirect(url_for('show_url', id=id))
