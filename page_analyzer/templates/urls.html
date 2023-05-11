@@ -19,8 +19,8 @@
       <tr>
         <td>{{ url.u_id }}</td>
         <td><a href="{{ url_for('show_url', id=url.u_id)}}">{{ url.name }}</a></td>
-        <td>{% if url.date %}
-            {{ url.date.date() }}
+        <td>{% if url.max_date %}
+            {{ url.max_date.date() }}
             {% endif %}
         </td>
         <td>{% if url.status_code %}

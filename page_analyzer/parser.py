@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 
 def parse_page(r):
@@ -14,5 +13,4 @@ def parse_page(r):
     description_tag = soup.find('meta', attrs={'name': 'description'})
     if description_tag:
         description = description_tag['content']
-    created_at = datetime.now()
-    return h1, title, description, created_at
+    return h1, title, description
