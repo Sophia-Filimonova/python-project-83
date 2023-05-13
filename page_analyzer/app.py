@@ -8,7 +8,7 @@ import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import requests
 from page_analyzer.parser import parse_page
-from page_analyzer.validator import validate_url
+from page_analyzer.url import validate_url
 
 
 load_dotenv()
@@ -56,10 +56,10 @@ def urls_post():
     errors = validate_url(recieved_url)
     if errors:
         for error in errors:
-            flash(error[0], error[1])
+            flash(error, 'alert alert-danger')
         return render_template('main_form.html'), 422
-    o = urlparse(recieved_url)
-    normalized_url = o.scheme + '://' + o.hostname
+    parsed_url = urlparse(recieved_url)
+    normalized_url = parsed_url.scheme + '://' + parsed_url.hostname
 
     with connect_db() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
