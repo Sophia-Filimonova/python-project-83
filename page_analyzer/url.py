@@ -1,9 +1,14 @@
 import validators
+from typing import List
 
 
-def validate_url(url):
+def validate_url(url: str) -> List[str]:
 
     errors = []
+    if not (isinstance(url, str)):
+        errors.append('Неверный тип данных аргумента')
+        return errors
+
     if url == '':
         errors.append('Некорректный URL')
         errors.append('URL обязателен')

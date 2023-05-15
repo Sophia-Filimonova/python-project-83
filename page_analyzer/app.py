@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import requests
-from page_analyzer.parser import parse_page
+from page_analyzer.parser import get_seo_data
 from page_analyzer.url import validate_url
 
 
@@ -63,17 +63,21 @@ def urls_post():
 
     with connect_db() as conn:
         with conn.cursor(cursor_factory=NamedTupleCursor) as curs:
-            curs.execute(
-                'SELECT id FROM urls WHERE name=%s', (normalized_url,))
-            selected_url = curs.fetchone()
-            if selected_url:
-                flash('Страница уже существует', 'alert alert-info')
-                return redirect(url_for('show_url', id=selected_url.id))
             created_at = datetime.now()
-            curs.execute(
-                '''INSERT INTO urls (name, created_at) VALUES (%s, %s)
-                RETURNING id''',
-                (normalized_url, created_at))
+            try:
+                curs.execute(
+                    '''INSERT INTO urls (name, created_at) VALUES (%s, %s)
+                    RETURNING id''',
+                    (normalized_url, created_at))
+            except psycopg2.errors.UniqueViolation:
+                flash('Страница уже существует', 'alert alert-info')
+                with connect_db() as conn2:
+                    with conn2.cursor() as curs2:
+                        curs2.execute(
+                            '''SELECT id FROM urls WHERE name=%s''',
+                            (normalized_url, ))
+                        (id,) = curs2.fetchone()
+                return redirect(url_for('show_url', id=id))
             (id,) = curs.fetchone()
     flash('Страница успешно добавлена', 'alert alert-success')
     return redirect(url_for('show_url', id=id))
@@ -102,13 +106,13 @@ def checks(id):
             curs.execute('SELECT * FROM urls WHERE id=%s', (id,))
             selected_url = curs.fetchone()
             try:
-                r = requests.get(selected_url.name)
-                r.raise_for_status()
+                response = requests.get(selected_url.name)
+                response.raise_for_status()
             except Exception:
                 flash('Произошла ошибка при проверке', 'alert alert-danger')
                 return redirect(url_for('show_url', id=id))
-            status_code = r.status_code
-            h1, title, description = parse_page(r)
+            status_code = response.status_code
+            h1, title, description = get_seo_data(response.text)
             created_at = datetime.now()
             curs.execute(
                 '''INSERT INTO url_checks (url_id, status_code,

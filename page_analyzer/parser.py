@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
 
 
-def parse_page(r):
-    soup = BeautifulSoup(r.text, 'html.parser')
+def get_seo_data(page_html):
+    soup = BeautifulSoup(page_html, 'html.parser')
     h1, title, description = '', '', ''
     h1_tag = soup.find('h1')
     if h1_tag:
