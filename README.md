@@ -4,7 +4,7 @@
 <a href="https://codeclimate.com/github/Sophia-Filimonova/python-project-83/maintainability"><img src="https://api.codeclimate.com/v1/badges/d399d851169a509b5da6/maintainability" /></a>
 
 
-[DOMAIN](https://python-project-83-production-410c.up.railway.app/)
+[Тестовая версия](https://python-project-83-production-410c.up.railway.app/)
  
 *<b>Использованные инструменты:</b>*
 <ul><li>Сервис Railway.app;</li>
